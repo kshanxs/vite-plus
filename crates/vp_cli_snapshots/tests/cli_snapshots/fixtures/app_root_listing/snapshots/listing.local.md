@@ -9,7 +9,6 @@ root (rfcs/cwd-flag.md).
 **Exit code:** 1
 
 ```
-note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.
 error: `vp build` at the workspace root needs a target package.
 
   Packages in this workspace:

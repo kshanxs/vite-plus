@@ -28,7 +28,7 @@ pub(super) fn print(command: Option<&str>, cwd: &AbsolutePath) {
     {
         return;
     }
-    if !has_package_json_script(cwd, command) {
+    if !has_distinct_package_json_script(cwd, command) {
         return;
     }
 
@@ -40,20 +40,52 @@ pub(super) fn print(command: Option<&str>, cwd: &AbsolutePath) {
     ));
 }
 
-/// Whether the package enclosing `cwd` defines a `<name>` script.
+/// Whether the package enclosing `cwd` defines a `<name>` script that does
+/// something other than run the `vp <name>` built-in.
 ///
 /// Walks up to the nearest `package.json`, which is the package `vp run`
 /// resolves the task from, so the note holds when a built-in runs from a
 /// subdirectory. It stops there rather than climbing to a package that happens
 /// to define the script: `vpr <name>` would not reach that one either.
-fn has_package_json_script(cwd: &AbsolutePath, name: &str) -> bool {
+fn has_distinct_package_json_script(cwd: &AbsolutePath, name: &str) -> bool {
     let Ok(package) = vt_workspace::find_package_root(cwd) else { return false };
     serde_json::from_slice::<serde_json::Value>(package.package_json.content()).is_ok_and(
         |manifest| {
             manifest
                 .get("scripts")
                 .and_then(|scripts| scripts.get(name))
-                .is_some_and(serde_json::Value::is_string)
+                .and_then(serde_json::Value::as_str)
+                .is_some_and(|script| !runs_same_built_in(script, name))
         },
     )
+}
+
+/// Whether `script` is exactly `vp <name>`, the built-in already running.
+///
+/// `vp create` scaffolds `"dev": "vp dev"`, where `vp dev` and `vpr dev` do the
+/// same thing and the note would only be noise. A script that adds arguments,
+/// such as `vp test --coverage`, still differs from the bare built-in.
+fn runs_same_built_in(script: &str, name: &str) -> bool {
+    script.split_whitespace().eq(["vp", name])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::runs_same_built_in;
+
+    #[test]
+    fn script_running_the_same_built_in() {
+        assert!(runs_same_built_in("vp test", "test"));
+        assert!(runs_same_built_in("  vp   dev ", "dev"));
+    }
+
+    #[test]
+    fn script_differing_from_the_built_in() {
+        assert!(!runs_same_built_in("vp test --coverage", "test"));
+        assert!(!runs_same_built_in("vp fmt", "format"));
+        assert!(!runs_same_built_in("vitest run", "test"));
+        assert!(!runs_same_built_in("vp run test", "test"));
+        assert!(!runs_same_built_in("vp", "test"));
+        assert!(!runs_same_built_in("", "test"));
+    }
 }

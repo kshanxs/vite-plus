@@ -116,7 +116,7 @@ Documentation: https://viteplus.dev/guide/dev
 
 ## `vp preview --port 12312312312`
 
-no note: this project has no `preview` script
+no note: the `preview` script only runs the same built-in, so `vpr preview` would do the same thing
 
 **Exit code:** 1
 

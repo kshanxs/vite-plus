@@ -1,6 +1,7 @@
 # A built-in command never runs a `package.json` script of the same name, so it
 # points at `vpr <name>` instead. This project defines `build`, `dev`, `lint`,
-# `format` and `help` scripts, but no `fmt` one.
+# `format`, `preview` and `help` scripts, but no `fmt` one. Only `preview` is
+# exactly `vp <name>`, where the built-in and the script are the same command.
 [[case]]
 name = "builtin_script_note"
 vp = ["local", "global"]
@@ -13,7 +14,7 @@ steps = [
   { argv = ["vp", "format", "src/"], comment = "the `format` alias reaches the local CLI as typed, so its own script gets the note", continue-on-failure = true },
   { argv = ["vp", "fmt", "src/"], comment = "no note: only `format` is a script here, and that is not the name this ran under", continue-on-failure = true },
   { argv = ["vp", "help", "dev"], comment = "the local path checks the original `help` spelling; the global CLI renders help before local delegation", continue-on-failure = true },
-  { argv = ["vp", "preview", "--port", "12312312312"], comment = "no note: this project has no `preview` script", continue-on-failure = true },
+  { argv = ["vp", "preview", "--port", "12312312312"], comment = "no note: the `preview` script only runs the same built-in, so `vpr preview` would do the same thing", continue-on-failure = true },
   { argv = ["vp", "lint", "src/"], tty = false, comment = "the note still reaches piped output, such as an AI agent capturing the command; it goes to stderr, so parsed stdout stays intact", continue-on-failure = true },
 ]
 

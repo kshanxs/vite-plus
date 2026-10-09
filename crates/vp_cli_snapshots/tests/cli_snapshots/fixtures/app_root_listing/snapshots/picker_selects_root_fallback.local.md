@@ -8,7 +8,6 @@ Selecting that row runs the command in the workspace root.
 **→ expect-milestone:** `package-select::0`
 
 ```
-note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.
 Select a package to build (↑/↓, Enter to run, type to search):
 
   › admin            apps/admin
@@ -22,7 +21,6 @@ Select a package to build (↑/↓, Enter to run, type to search):
 **→ expect-milestone:** `package-select:app-root-listing:0`
 
 ```
-note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.
 Select a package to build (↑/↓, Enter to run, type to search): app-root-listing
 
   › app-root-listing .
@@ -31,7 +29,6 @@ Select a package to build (↑/↓, Enter to run, type to search): app-root-list
 **← write-key:** `enter`
 
 ```
-note: You are running `vp build` as a Vite+ built-in command. If you meant to run the build npm script, use `vpr build` instead.
 Selected package: app-root-listing (.)
 Tip: run this directly with `vp -C . build`
 ✓ 2 modules transformed.

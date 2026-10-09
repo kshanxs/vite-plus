@@ -5,7 +5,7 @@
 no note: a task-spawned `vp build` is already on the script path
 
 ```
-$ vp build ⊘ cache disabled
+$ vp build --mode production ⊘ cache disabled
 ✓ 4 modules transformed.
 computing gzip size...
 dist/index.html                <size> kB │ gzip: <size> kB

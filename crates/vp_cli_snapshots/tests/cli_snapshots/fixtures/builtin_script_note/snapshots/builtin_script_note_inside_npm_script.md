@@ -7,7 +7,7 @@ no note: npm has already selected and started the build script
 ```
 
 > @test/builtin-script-note@1.0.0 build
-> vp build
+> vp build --mode production
 
 ✓ 4 modules transformed.
 computing gzip size...

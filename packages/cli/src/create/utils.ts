@@ -124,6 +124,15 @@ export function moveDirKeepingExisting(srcDir: string, destDir: string): string[
 }
 
 /**
+ * Build a `vp fmt` exclude pattern for `filePath`, anchored at `cwd` so it does
+ * not also match files with the same name in other directories.
+ */
+export function formatIgnorePattern(cwd: string, filePath: string): string {
+  const relativePath = path.relative(cwd, filePath).split(path.sep).join('/');
+  return `!/${relativePath.replaceAll(/[\\*?[\]{}!]/g, String.raw`\$&`)}`;
+}
+
+/**
  * Format the target directory into a valid directory name and package name
  *
  * Examples:

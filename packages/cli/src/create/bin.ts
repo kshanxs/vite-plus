@@ -93,6 +93,7 @@ import {
   ensureDefaultGitignoreEntries,
   ensureGitignoreVsCodeEditorConfigs,
   formatTargetDir,
+  formatIgnorePattern,
   moveDirKeepingExisting,
   shouldConfigureEditorsForCreate,
 } from './utils.ts';
@@ -844,11 +845,32 @@ Use \`vp create --list\` to list all available templates, or run \`vp create --h
 
   // Builtin and bundled templates are scaffolded by Vite+ itself, so they can
   // be written into a directory that already has files without replacing them.
-  const checkScaffoldDir = (dir: string) =>
-    checkProjectDirExists(path.join(workspaceInfo.rootDir, dir), options.interactive, {
-      canKeepExisting: true,
+  // A directory that already has a `package.json` is a project of its own: the
+  // setup steps after scaffolding would rewrite it, so it cannot be kept.
+  const checkScaffoldDir = (dir: string) => {
+    const targetPath = path.join(workspaceInfo.rootDir, dir);
+    const hasPackageJson = fs.existsSync(path.join(targetPath, 'package.json'));
+    if (options.force && hasPackageJson) {
+      cancelAndExit(
+        `Target directory "${targetPath}" already contains a package.json, so --force cannot scaffold a project into it`,
+        1,
+      );
+    }
+    return checkProjectDirExists(targetPath, options.interactive, {
+      canKeepExisting: !hasPackageJson,
       keepExisting: options.force,
     });
+  };
+
+  // Top-level entries that were in the target directory before scaffolding.
+  // They are excluded from formatting so the kept files stay byte-for-byte.
+  let keptEntries: string[] = [];
+  const fmtPathsKeepingExisting = (cwd: string, paths: string[]) => {
+    if (keptEntries.length === 0) {
+      return paths;
+    }
+    return [...paths, ...keptEntries.map((entry) => formatIgnorePattern(cwd, entry))];
+  };
 
   // Template tools refuse or empty a non-empty directory, so when the existing
   // files must be kept, scaffold into a staging directory inside the target and
@@ -866,12 +888,15 @@ Use \`vp create --list\` to list all available templates, or run \`vp create --h
       .split(path.sep)
       .join('/');
     const stagingPath = path.join(workspaceInfo.rootDir, stagingDir);
+    const targetPath = path.join(workspaceInfo.rootDir, dir);
+    const existingEntries = fs.readdirSync(targetPath);
     try {
       const result = await scaffold(stagingDir);
       if (result.exitCode !== 0 || !result.projectDir) {
         return result;
       }
-      const kept = moveDirKeepingExisting(stagingPath, path.join(workspaceInfo.rootDir, dir));
+      const kept = moveDirKeepingExisting(stagingPath, targetPath);
+      keptEntries = existingEntries.map((entry) => path.join(targetPath, entry));
       if (kept.length > 0) {
         pauseCreateProgress();
         prompts.log.info(`Skipped template files that already exist: ${kept.join(', ')}`);
@@ -1019,7 +1044,12 @@ Use \`vp create --list\` to list all available templates, or run \`vp create --h
     });
     await handleIgnoredBuilds(fullPath, fullPath, installSummary);
     updateCreateProgress('Formatting code');
-    await runViteFmt(fullPath, options.interactive, undefined, { silent: compactOutput });
+    await runViteFmt(
+      fullPath,
+      options.interactive,
+      keptEntries.length > 0 ? fmtPathsKeepingExisting(fullPath, ['.']) : undefined,
+      { silent: compactOutput },
+    );
     clearCreateProgress();
     showCreateSummary({
       description: describeScaffold(selectedTemplateName, selectedTemplateArgs),
@@ -1335,9 +1365,12 @@ Use \`vp create --list\` to list all available templates, or run \`vp create --h
     const fmtPaths = registeredConfigPath
       ? [projectDir, path.relative(workspaceInfo.rootDir, registeredConfigPath)]
       : [projectDir];
-    await runViteFmt(workspaceInfo.rootDir, options.interactive, fmtPaths, {
-      silent: compactOutput,
-    });
+    await runViteFmt(
+      workspaceInfo.rootDir,
+      options.interactive,
+      fmtPathsKeepingExisting(workspaceInfo.rootDir, fmtPaths),
+      { silent: compactOutput },
+    );
     // No git setup here: `resolveGitInit` always returns false inside an
     // existing monorepo (the package shares the monorepo's repository).
   } else {
@@ -1379,7 +1412,12 @@ Use \`vp create --list\` to list all available templates, or run \`vp create --h
     });
     await handleIgnoredBuilds(fullPath, fullPath, installSummary);
     updateCreateProgress('Formatting code');
-    await runViteFmt(fullPath, options.interactive, undefined, { silent: compactOutput });
+    await runViteFmt(
+      fullPath,
+      options.interactive,
+      keptEntries.length > 0 ? fmtPathsKeepingExisting(fullPath, ['.']) : undefined,
+      { silent: compactOutput },
+    );
   }
 
   clearCreateProgress();

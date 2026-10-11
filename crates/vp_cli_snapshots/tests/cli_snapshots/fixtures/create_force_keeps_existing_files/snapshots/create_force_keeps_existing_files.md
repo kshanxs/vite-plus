@@ -26,10 +26,20 @@ Target directory "<workspace>/my-app" is not empty
 
 ## `vpt print-file my-app/README.md`
 
-the existing README is kept
+the existing README is kept and not reformatted
 
 ```
-# Mine
+#   Mine
+
+*  kept as written
+```
+
+## `vpt print-file my-app/notes/todo.md`
+
+files in existing directories are not reformatted
+
+```
+*  also kept
 ```
 
 ## `vpt print-file my-app/.gitignore`
@@ -46,4 +56,15 @@ the template is scaffolded
 
 ```
 my-app/package.json: file
+```
+
+## `cd has-package && vp create vite:application --no-interactive --directory . --force`
+
+a directory that already has a package.json is refused
+
+**Exit code:** 1
+
+```
+● Using package name: has-package
+Target directory "<workspace>/has-package" already contains a package.json, so --force cannot scaffold a project into it
 ```

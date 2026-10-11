@@ -8,6 +8,7 @@ import {
   deriveDefaultPackageName,
   ensureDefaultGitignoreEntries,
   ensureGitignoreVsCodeEditorConfigs,
+  formatIgnorePattern,
   formatTargetDir,
   getProjectDirFromPackageName,
   moveDirKeepingExisting,
@@ -456,5 +457,18 @@ describe('moveDirKeepingExisting', () => {
 
     expect(moveDirKeepingExisting(srcDir, destDir)).toEqual(['docs']);
     expect(read('docs')).toBe('mine');
+  });
+});
+
+describe('formatIgnorePattern', () => {
+  const cwd = path.join(os.tmpdir(), 'workspace');
+
+  it('anchors the pattern at the working directory', () => {
+    expect(formatIgnorePattern(cwd, path.join(cwd, 'README.md'))).toBe('!/README.md');
+    expect(formatIgnorePattern(cwd, path.join(cwd, 'apps', 'web', 'src'))).toBe('!/apps/web/src');
+  });
+
+  it('escapes glob characters in file names', () => {
+    expect(formatIgnorePattern(cwd, path.join(cwd, '[id].tsx'))).toBe(String.raw`!/\[id\].tsx`);
   });
 });

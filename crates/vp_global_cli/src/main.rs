@@ -486,6 +486,10 @@ async fn main() -> ExitCode {
         args.drain(1..=consumed);
     }
 
+    // `vp --filter app run dev` is `vp run --filter app dev`, as with pnpm.
+    let user_args = vp_pm_cli::hoist_leading_workspace_flags(args.split_off(1));
+    args.extend(user_args);
+
     if args.len() == 1 {
         match command_picker::pick_top_level_command_if_interactive(&cwd) {
             Ok(command_picker::TopLevelCommandPick::Selected(selection)) => {

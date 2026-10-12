@@ -1,0 +1,7 @@
+{
+  "name": "app-a",
+  "version": "1.0.0",
+  "scripts": {
+    "hello": "node -e \"console.log('hello from app-a')\""
+  }
+}

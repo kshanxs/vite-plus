@@ -17,7 +17,9 @@ mod request;
 pub(crate) mod resolution;
 mod shim;
 
-pub use cli::{ManagedGlobalCommand, PackageManagerCommand, PmCommand};
+pub use cli::{
+    ManagedGlobalCommand, PackageManagerCommand, PmCommand, hoist_leading_workspace_flags,
+};
 pub use config::npm_registry;
 pub use dispatch::{
     DispatchResult, dispatch, dispatch_with_metadata, dispatch_with_package_manager,

@@ -372,7 +372,9 @@ pub async fn main(
     args: Option<Vec<String>>,
     explicit_chdir: bool,
 ) -> Result<ExitStatus, Error> {
-    let raw_args: Vec<String> = args.unwrap_or_else(|| env::args().skip(1).collect());
+    let raw_args: Vec<String> = vp_pm_cli::hoist_leading_workspace_flags(
+        args.unwrap_or_else(|| env::args().skip(1).collect()),
+    );
     // The global CLI resolves aliases to their canonical names before
     // delegating, so prefer the original spelling it forwards. A direct local
     // invocation can use its first, still-unnormalized argument.

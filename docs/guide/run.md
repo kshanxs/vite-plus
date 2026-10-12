@@ -222,6 +222,17 @@ Multiple `--filter` flags are combined as a union. Exclusion filters are applied
 
 When a `--filter` matches no packages, Vite+ prints a warning and exits successfully. Pass `--fail-if-no-match` to abort the run when any filter matches nothing instead.
 
+### Flags Before the Command
+
+As with pnpm, the package selection flags (`-r`, `-t`, `-w`, and `--filter`) can also be written before `run`:
+
+```bash
+vp --filter @my/app run build
+vp -r run build
+```
+
+The same order works for `vp exec` and the package manager commands such as `vp add` and `vp update`.
+
 ### Workspace Root (`-w`)
 
 Explicitly run the task in the workspace root package:

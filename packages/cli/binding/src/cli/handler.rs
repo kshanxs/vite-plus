@@ -65,10 +65,11 @@ impl CommandHandler for VitePlusCommandHandler {
         }
         // "vpr <args>" is shorthand for "vp run <args>", so prepend "run" for parsing.
         let is_vpr = program == "vpr";
+        let args: Vec<String> = command.args.iter().map(|arg| arg.as_str().to_owned()).collect();
+        // `vp --filter app run dev` is `vp run --filter app dev`, as on the command line.
+        let args = if is_vpr { args } else { vp_pm_cli::hoist_leading_workspace_flags(args) };
         let cli_args = match CLIArgs::try_parse_from(
-            iter::once("vp")
-                .chain(is_vpr.then_some("run"))
-                .chain(command.args.iter().map(Str::as_str)),
+            iter::once("vp").chain(is_vpr.then_some("run")).chain(args.iter().map(String::as_str)),
         ) {
             Ok(args) => args,
             Err(err) if err.kind() == ErrorKind::InvalidSubcommand => {

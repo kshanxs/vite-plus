@@ -35,6 +35,16 @@ pub async fn execute_app(
     executor.delegate_to_local_cli(&cwd, &full_args).await
 }
 
+/// Hand an argument list to the local `vite-plus` CLI exactly as the user wrote it.
+pub async fn execute_raw(
+    cwd: AbsolutePathBuf,
+    args: &[String],
+    explicit_chdir: bool,
+) -> Result<ExitStatus, Error> {
+    let mut executor = JsExecutor::new(None).with_explicit_chdir(explicit_chdir);
+    executor.delegate_to_local_cli(&cwd, args).await
+}
+
 /// Execute a command by delegating to the local `vite-plus` CLI, capturing output.
 pub async fn execute_output(
     cwd: AbsolutePathBuf,

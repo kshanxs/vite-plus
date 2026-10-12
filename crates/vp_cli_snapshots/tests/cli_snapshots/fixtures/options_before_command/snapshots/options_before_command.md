@@ -1,4 +1,4 @@
-# leading_workspace_flags
+# options_before_command
 
 ## `vp --filter app-a run hello`
 
@@ -32,6 +32,27 @@ VITE+ - The Unified Toolchain for the Web
 app-b
 ```
 
+## `vp --ignore-depends-on -F app-a run hello`
+
+any option of the command, not only package selection
+
+```
+VITE+ - The Unified Toolchain for the Web
+
+~/packages/app-a$ node -e "console.log('hello from app-a')" ⊘ cache disabled
+hello from app-a
+```
+
+## `vp --filter run run hello`
+
+an option value that looks like a command
+
+```
+VITE+ - The Unified Toolchain for the Web
+
+No packages matched the filter: run
+```
+
 ## `vp run nested`
 
 the same order inside a script
@@ -43,9 +64,21 @@ VITE+ - The Unified Toolchain for the Web
 hello from app-a
 ```
 
+## `vp --nope run hello`
+
+an option the command does not have
+
+**Exit code:** 2
+
+```
+VITE+ - The Unified Toolchain for the Web
+
+error: Unexpected argument '--nope'
+```
+
 ## `vp -r fmt`
 
-tool commands do not take workspace flags
+tool commands only take options after the command
 
 **Exit code:** 2
 

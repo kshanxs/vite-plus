@@ -1,5 +1,5 @@
 {
-  "name": "leading-workspace-flags",
+  "name": "options-before-command",
   "version": "1.0.0",
   "private": true,
   "scripts": {

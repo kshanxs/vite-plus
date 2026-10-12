@@ -11,21 +11,21 @@ mod cli;
 mod config;
 mod dispatch;
 mod error;
+mod leading_options;
 mod lifecycle_env;
 mod package_manager;
 mod request;
 pub(crate) mod resolution;
 mod shim;
 
-pub use cli::{
-    ManagedGlobalCommand, PackageManagerCommand, PmCommand, hoist_leading_workspace_flags,
-};
+pub use cli::{ManagedGlobalCommand, PackageManagerCommand, PmCommand};
 pub use config::npm_registry;
 pub use dispatch::{
     DispatchResult, dispatch, dispatch_with_metadata, dispatch_with_package_manager,
     dispatch_with_resolved_package_manager,
 };
 pub use error::Error;
+pub use leading_options::hoist_leading_options;
 pub use lifecycle_env::LifecycleEnvContext;
 pub use package_manager::{
     EnvironmentPackageManagerResolution, PackageManager, PackageManagerBuilder,

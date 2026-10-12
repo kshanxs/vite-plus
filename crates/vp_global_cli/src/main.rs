@@ -329,6 +329,13 @@ fn has_pass_as_value_suggestion(error: &clap::Error) -> bool {
     }
 }
 
+/// Whether options are written before `run` or `exec`, the two commands whose
+/// options only the project's CLI declares.
+fn has_options_before_delegated_command(raw_args: &[String]) -> bool {
+    raw_args.first().is_some_and(|arg| arg.starts_with('-'))
+        && raw_args.iter().any(|arg| matches!(arg.as_str(), "run" | "exec"))
+}
+
 fn print_unknown_argument_error(error: &clap::Error) -> bool {
     let Some(invalid_argument) = extract_unknown_argument(error) else {
         return false;
@@ -486,9 +493,13 @@ async fn main() -> ExitCode {
         args.drain(1..=consumed);
     }
 
-    // `vp --filter app run dev` is `vp run --filter app dev`, as with pnpm.
-    let user_args = vp_pm_cli::hoist_leading_workspace_flags(args.split_off(1));
-    args.extend(user_args);
+    // `vp -w add react` is `vp add -w react`, as with pnpm.
+    let user_args = args.split_off(1);
+    if user_args.first().is_some_and(|arg| arg.starts_with('-')) {
+        args.extend(vp_pm_cli::hoist_leading_options(&command_with_help(), user_args));
+    } else {
+        args.extend(user_args);
+    }
 
     if args.len() == 1 {
         match command_picker::pick_top_level_command_if_interactive(&cwd) {
@@ -573,6 +584,27 @@ async fn main() -> ExitCode {
                     e.print().ok();
                     clap_error_to_exit_code(&e)
                 }
+            } else if matches!(e.kind(), ErrorKind::UnknownArgument)
+                && has_options_before_delegated_command(&raw_args)
+            {
+                // The project's CLI declares the options of `run` and `exec`,
+                // so it is the one that can tell `vp --filter app run dev` from
+                // a mistake.
+                if !help::has_help_flag_before_terminator(&raw_args) {
+                    vp_shared::header::print_header();
+                }
+                match commands::delegate::execute_raw(cwd.clone(), &raw_args, explicit_chdir).await
+                {
+                    Ok(exit_status) => exit_status_to_exit_code(exit_status),
+                    Err(e) => {
+                        if e.is_user_message() {
+                            output::raw_stderr(&format!("{e}"));
+                        } else {
+                            output::error(&format!("{e}"));
+                        }
+                        ExitCode::FAILURE
+                    }
+                }
             } else if matches!(e.kind(), ErrorKind::UnknownArgument) {
                 if !print_unknown_argument_error(&e) {
                     e.print().ok();
@@ -611,9 +643,9 @@ mod tests {
     use clap::error::ErrorKind;
 
     use super::{
-        extract_unknown_argument, has_pass_as_value_suggestion, is_affirmative_response,
-        normalize_args, parse_leading_chdir, replace_top_level_typoed_subcommand,
-        try_parse_args_from,
+        command_with_help, extract_unknown_argument, has_options_before_delegated_command,
+        has_pass_as_value_suggestion, is_affirmative_response, normalize_args, parse_leading_chdir,
+        replace_top_level_typoed_subcommand, try_parse_args_from,
     };
 
     fn s(v: &[&str]) -> Vec<String> {
@@ -642,6 +674,26 @@ mod tests {
 
     fn some_dir(consumed: usize) -> Option<(String, usize)> {
         Some(("apps/web".to_string(), consumed))
+    }
+
+    #[test]
+    fn leading_options_move_behind_commands_the_global_cli_parses() {
+        let hoist = |args: &[&str]| vp_pm_cli::hoist_leading_options(&command_with_help(), s(args));
+        assert_eq!(hoist(&["-w", "add", "react"]), s(&["add", "-w", "react"]));
+        assert_eq!(hoist(&["-wD", "add", "react"]), s(&["add", "-wD", "react"]));
+        assert_eq!(hoist(&["--filter", "app", "up"]), s(&["up", "--filter", "app"]));
+        // `run` and `exec` declare their options in the project's CLI.
+        assert_eq!(hoist(&["-r", "run", "build"]), s(&["-r", "run", "build"]));
+        // Options of `vp` itself are not moved.
+        assert_eq!(hoist(&["-V", "add"]), s(&["-V", "add"]));
+    }
+
+    #[test]
+    fn detects_options_before_delegated_commands() {
+        assert!(has_options_before_delegated_command(&s(&["--filter", "app", "run", "dev"])));
+        assert!(has_options_before_delegated_command(&s(&["-F", "app", "exec", "tsc"])));
+        assert!(!has_options_before_delegated_command(&s(&["run", "-r", "dev"])));
+        assert!(!has_options_before_delegated_command(&s(&["-r", "fmt"])));
     }
 
     #[test]

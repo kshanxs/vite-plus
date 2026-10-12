@@ -19,42 +19,6 @@ use crate::{
     },
 };
 
-/// Move workspace-selection flags written before the command to just after
-/// it, so `vp --filter app run dev` and `vp -r run build` behave like
-/// `vp run --filter app dev` and `vp run -r build`, as they do with pnpm.
-///
-/// `args` is the user's argument list without the program name. It is returned
-/// unchanged unless the flags are followed by `run`, `exec`, or a
-/// package-manager command. Those commands validate the flags themselves; the
-/// other built-ins forward their arguments to a tool, where the same letter can
-/// mean something else (`vite build -w` watches).
-#[must_use]
-pub fn hoist_leading_workspace_flags(mut args: Vec<String>) -> Vec<String> {
-    let mut flags_end = 0;
-    while let Some(arg) = args.get(flags_end) {
-        flags_end += match arg.as_str() {
-            "-r" | "--recursive" | "-t" | "--transitive" | "-w" | "--workspace-root" => 1,
-            "-F" | "--filter" => 2,
-            arg if arg.starts_with("--filter=") || arg.starts_with("-F") => 1,
-            _ => break,
-        };
-    }
-    if flags_end == 0 {
-        return args;
-    }
-    let Some(command) = args.get(flags_end) else {
-        return args;
-    };
-    let accepts_workspace_flags = matches!(command.as_str(), "run" | "exec")
-        || PackageManagerCommand::augment_subcommands(clap::Command::new("vp"))
-            .find_subcommand(command)
-            .is_some();
-    if accepts_workspace_flags {
-        args[..=flags_end].rotate_right(1);
-    }
-    args
-}
-
 /// A parsed package-manager command.
 ///
 /// The variants intentionally hold the production resolver argument types
@@ -456,37 +420,6 @@ mod tests {
             version: version.into(),
             bin_prefix: workspace_root.join(".test-package-manager").join("bin"),
         }
-    }
-
-    fn hoist(args: &[&str]) -> Vec<String> {
-        hoist_leading_workspace_flags(args.iter().map(ToString::to_string).collect())
-    }
-
-    #[test]
-    fn hoists_leading_workspace_flags_after_the_command() {
-        assert_eq!(hoist(&["--filter", "app", "run", "dev"]), ["run", "--filter", "app", "dev"]);
-        assert_eq!(hoist(&["--filter=app", "run", "dev"]), ["run", "--filter=app", "dev"]);
-        assert_eq!(hoist(&["-F", "app", "exec", "tsc"]), ["exec", "-F", "app", "tsc"]);
-        assert_eq!(hoist(&["-Fapp", "-r", "run", "build"]), ["run", "-Fapp", "-r", "build"]);
-        assert_eq!(hoist(&["-w", "add", "react"]), ["add", "-w", "react"]);
-        // Aliases of package-manager commands count too.
-        assert_eq!(hoist(&["-r", "up"]), ["up", "-r"]);
-        // Flags after the command stay where they are.
-        assert_eq!(hoist(&["-r", "run", "build", "-w"]), ["run", "-r", "build", "-w"]);
-    }
-
-    #[test]
-    fn leaves_other_leading_arguments_alone() {
-        // Tool commands forward their arguments, so the flag keeps its position.
-        assert_eq!(hoist(&["-w", "build"]), ["-w", "build"]);
-        assert_eq!(hoist(&["-r", "lint"]), ["-r", "lint"]);
-        // No command follows, or the value of `--filter` is missing.
-        assert_eq!(hoist(&["-r"]), ["-r"]);
-        assert_eq!(hoist(&["--filter"]), ["--filter"]);
-        assert_eq!(hoist(&["--filter", "run"]), ["--filter", "run"]);
-        // Other flags are not workspace selection.
-        assert_eq!(hoist(&["--version", "run"]), ["--version", "run"]);
-        assert_eq!(hoist(&["run", "-r", "build"]), ["run", "-r", "build"]);
     }
 
     #[test]

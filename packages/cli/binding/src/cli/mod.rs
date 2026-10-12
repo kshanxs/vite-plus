@@ -14,7 +14,7 @@ mod types;
 
 use std::{borrow::Cow, env, ffi::OsStr, sync::Arc};
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use cow_utils::CowUtils;
 pub(crate) use execution::resolve_and_capture_output;
 // Re-exports for lib.rs and check/mod.rs
@@ -372,7 +372,9 @@ pub async fn main(
     args: Option<Vec<String>>,
     explicit_chdir: bool,
 ) -> Result<ExitStatus, Error> {
-    let raw_args: Vec<String> = vp_pm_cli::hoist_leading_workspace_flags(
+    // `vp --filter app run dev` is `vp run --filter app dev`, as with pnpm.
+    let raw_args: Vec<String> = vp_pm_cli::hoist_leading_options(
+        &CLIArgs::command(),
         args.unwrap_or_else(|| env::args().skip(1).collect()),
     );
     // The global CLI resolves aliases to their canonical names before

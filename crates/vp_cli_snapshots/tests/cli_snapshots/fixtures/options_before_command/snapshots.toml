@@ -1,0 +1,23 @@
+[[case]]
+name = "options_before_command"
+vp = "global"
+steps = [
+  { argv = ["vp", "--filter", "app-a", "run", "hello"], comment = "--filter before the command", continue-on-failure = true },
+  { argv = ["vp", "-w", "run", "hello"], comment = "-w before the command", continue-on-failure = true },
+  { argv = ["vp", "-F", "app-b", "exec", "--", "node", "-e", "console.log(process.env.VP_PACKAGE_NAME)"], comment = "-F before exec", continue-on-failure = true },
+  { argv = ["vp", "--ignore-depends-on", "-F", "app-a", "run", "hello"], comment = "any option of the command, not only package selection", continue-on-failure = true },
+  { argv = ["vp", "--filter", "run", "run", "hello"], comment = "an option value that looks like a command", continue-on-failure = true },
+  { argv = ["vp", "run", "nested"], comment = "the same order inside a script", continue-on-failure = true },
+  { argv = ["vp", "--nope", "run", "hello"], comment = "an option the command does not have", continue-on-failure = true },
+  { argv = ["vp", "-r", "fmt"], comment = "tool commands only take options after the command", continue-on-failure = true },
+]
+
+[[case]]
+name = "options_before_command_local"
+vp = "local"
+steps = [
+  { argv = ["vp", "--filter", "app-a", "run", "hello"], comment = "--filter before the command", continue-on-failure = true },
+  { argv = ["vp", "-w", "run", "hello"], comment = "-w before the command", continue-on-failure = true },
+  { argv = ["vp", "--nope", "run", "hello"], comment = "an option the command does not have", continue-on-failure = true },
+  { argv = ["vp", "-w", "build"], comment = "tool commands only take options after the command", continue-on-failure = true },
+]

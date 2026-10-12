@@ -1,6 +1,6 @@
 use std::iter;
 
-use clap::{Parser, error::ErrorKind};
+use clap::{CommandFactory, Parser, error::ErrorKind};
 use vt::{
     CommandHandler, HandledCommand, ScriptCommand,
     config::user::{EnabledCacheConfig, UserCacheConfig, UserRunConfig},
@@ -67,7 +67,8 @@ impl CommandHandler for VitePlusCommandHandler {
         let is_vpr = program == "vpr";
         let args: Vec<String> = command.args.iter().map(|arg| arg.as_str().to_owned()).collect();
         // `vp --filter app run dev` is `vp run --filter app dev`, as on the command line.
-        let args = if is_vpr { args } else { vp_pm_cli::hoist_leading_workspace_flags(args) };
+        let args =
+            if is_vpr { args } else { vp_pm_cli::hoist_leading_options(&CLIArgs::command(), args) };
         let cli_args = match CLIArgs::try_parse_from(
             iter::once("vp").chain(is_vpr.then_some("run")).chain(args.iter().map(String::as_str)),
         ) {

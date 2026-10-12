@@ -1,4 +1,4 @@
-# leading_workspace_flags_local
+# options_before_command_local
 
 ## `vp --filter app-a run hello`
 
@@ -16,4 +16,24 @@ hello from app-a
 ```
 $ node -e "console.log('hello from the root')" ⊘ cache disabled
 hello from the root
+```
+
+## `vp --nope run hello`
+
+an option the command does not have
+
+**Exit code:** 2
+
+```
+error: Unexpected argument '--nope'
+```
+
+## `vp -w build`
+
+tool commands only take options after the command
+
+**Exit code:** 2
+
+```
+error: Unexpected argument '-w'
 ```
